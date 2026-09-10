@@ -80,6 +80,7 @@ export const connectDB = async () => {
     const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 3000,
     });
+    await conn.connection.db.admin().ping();
     console.log(`[MongoDB] Connected: ${conn.connection.host}/${conn.connection.name}`);
     await autoSeedIfEmpty();
     return;
