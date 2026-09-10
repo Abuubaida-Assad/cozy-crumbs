@@ -86,9 +86,15 @@ export const ProductCard = ({ product }) => {
         <div className="pt-3 border-t border-[#3A2923]/10 flex items-center justify-between mt-auto">
           <div>
             <span className="text-[9px] uppercase font-semibold text-[#8C735A] block leading-none mb-0.5">Price</span>
-            <span className="font-sans text-lg font-black text-[#3A2923]">
-              ₹{product.price}
-            </span>
+            {product.price && product.price > 0 ? (
+              <span className="font-sans text-lg font-black text-[#3A2923]">
+                ₹{product.price}
+              </span>
+            ) : (
+              <span className="font-sans text-xs font-semibold text-[#8C735A] italic">
+                Price available in store
+              </span>
+            )}
           </div>
 
           <span className="text-xs font-semibold text-[#8C735A] group-hover:underline flex items-center gap-1">

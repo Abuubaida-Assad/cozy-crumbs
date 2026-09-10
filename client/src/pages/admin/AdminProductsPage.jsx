@@ -326,8 +326,12 @@ export const AdminProductsPage = () => {
                     </td>
 
                     {/* Price */}
-                    <td className="py-3 px-4 font-extrabold text-slate-900">
-                      ₹{prod.price}
+                    <td className="py-3 px-4 text-sm font-semibold text-slate-900 whitespace-nowrap">
+                      {prod.price > 0 ? `₹${prod.price}` : (
+                        <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-medium">
+                          In Store
+                        </span>
+                      )}
                     </td>
 
                     {/* Dietary Badges */}

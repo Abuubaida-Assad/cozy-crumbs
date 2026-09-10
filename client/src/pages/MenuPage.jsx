@@ -12,6 +12,7 @@ export const MenuPage = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Filters State
   const activeCategoryParam = searchParams.get('category') || 'all';
@@ -21,6 +22,7 @@ export const MenuPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
         const [catRes, prodRes] = await Promise.all([
           categoryService.getCategories(),
@@ -31,6 +33,7 @@ export const MenuPage = () => {
         if (prodRes.success) setProducts(prodRes.data);
       } catch (err) {
         console.error('Failed to load menu data:', err);
+        setError('Unable to load the menu. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -211,8 +214,22 @@ export const MenuPage = () => {
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading ? (
+        {/* Error State */}
+        {error ? (
+          <div className="text-center py-20 bg-white rounded-3xl p-8 border border-red-100 shadow-sm max-w-lg mx-auto">
+            <h3 className="font-display text-xl font-bold text-[#3A2923] mb-2">Unable to load the menu. Please try again.</h3>
+            <p className="font-sans text-xs sm:text-sm text-[#6F5746] mb-6">
+              We encountered a temporary connection issue.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#3A2923] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#8C735A] transition-colors"
+            >
+              <span>RETRY</span>
+            </button>
+          </div>
+        ) : loading ? (
+          /* Loading State */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {[...Array(8)].map((_, i) => (
               <SkeletonCard key={i} />
@@ -221,9 +238,13 @@ export const MenuPage = () => {
         ) : filteredProducts.length === 0 ? (
           /* Empty State */
           <div className="text-center py-20 bg-white rounded-3xl p-8 border border-[#3A2923]/10 shadow-sm max-w-lg mx-auto">
-            <h3 className="font-display text-xl font-bold text-[#3A2923] mb-2">No matching treats found</h3>
+            <h3 className="font-display text-xl font-bold text-[#3A2923] mb-2">
+              {activeCategoryParam !== 'all' ? 'No products available in this category.' : 'No matching treats found'}
+            </h3>
             <p className="font-sans text-xs sm:text-sm text-[#6F5746] mb-6">
-              Try adjusting your dietary filter or search query.
+              {activeCategoryParam !== 'all'
+                ? 'Check back soon for freshly baked additions.'
+                : 'Try adjusting your dietary filter or search query.'}
             </p>
             <button
               onClick={() => {
@@ -233,7 +254,7 @@ export const MenuPage = () => {
               }}
               className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#3A2923] text-white text-xs font-bold uppercase tracking-wider"
             >
-              <span>RESET FILTERS</span>
+              <span>{activeCategoryParam !== 'all' ? 'VIEW ALL PRODUCTS' : 'RESET FILTERS'}</span>
             </button>
           </div>
         ) : activeCategoryParam === 'all' && searchQuery === '' && dietFilter === 'all' ? (

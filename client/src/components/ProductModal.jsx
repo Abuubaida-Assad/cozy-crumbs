@@ -77,9 +77,15 @@ export const ProductModal = () => {
               </h2>
 
               <div className="flex items-center gap-3 mb-4">
-                <span className="font-sans text-2xl font-black text-[#3A2923]">
-                  ₹{product.price}
-                </span>
+                {product.price && product.price > 0 ? (
+                  <span className="font-sans text-2xl font-black text-[#3A2923]">
+                    ₹{product.price}
+                  </span>
+                ) : (
+                  <span className="font-sans text-sm font-semibold text-[#8C735A] bg-[#F7F4EE] px-3 py-1.5 rounded-lg italic">
+                    Price available in store
+                  </span>
+                )}
                 {product.weight && (
                   <span className="text-xs font-medium text-[#6F5746] bg-[#E8DED1]/60 px-2.5 py-1 rounded-lg">
                     {product.weight}
