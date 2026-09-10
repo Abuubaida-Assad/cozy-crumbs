@@ -8,11 +8,13 @@ const TOTAL_FRAMES = 96;
 export const Hero = () => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const desktopTextRef = useRef(null);
   const imagesRef = useRef([]);
   const loadedFramesRef = useRef(new Set());
   const lastDrawnIndexRef = useRef(-1);
   const rafScheduledRef = useRef(false);
-  const scrollDistanceRef = useRef(1);
+  const heroTopRef = useRef(0);
+  const animRangeRef = useRef(1);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -38,12 +40,12 @@ export const Hero = () => {
       }
     };
 
-    const measureScrollDistance = () => {
+    // Calculate dedicated animation range extending into the next section (~1.8 viewport heights)
+    const updateMeasurements = () => {
       if (containerRef.current) {
-        scrollDistanceRef.current = Math.max(
-          containerRef.current.offsetHeight - window.innerHeight,
-          1
-        );
+        const rect = containerRef.current.getBoundingClientRect();
+        heroTopRef.current = rect.top + (window.scrollY || window.pageYOffset || 0);
+        animRangeRef.current = Math.max(window.innerHeight * 1.8, 1);
       }
     };
 
@@ -94,12 +96,21 @@ export const Hero = () => {
       lastDrawnIndexRef.current = index;
     };
 
-    // 3. Scroll handler: calculate target frame and draw on requestAnimationFrame
+    // 3. Scroll handler: calculate target frame across the full 1.8vh range and draw on requestAnimationFrame
     const updateFrameOnScroll = () => {
-      const scrollDist = scrollDistanceRef.current;
-      const progress = Math.min(Math.max(window.scrollY / scrollDist, 0), 1);
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      const animStart = heroTopRef.current;
+      const animRange = animRangeRef.current;
+
+      const progress = Math.min(Math.max((scrollY - animStart) / animRange, 0), 1);
       const targetIndex = Math.min(Math.floor(progress * (TOTAL_FRAMES - 1)), TOTAL_FRAMES - 1);
       drawFrameByIndex(targetIndex);
+
+      if (desktopTextRef.current && window.innerWidth >= 1024) {
+        const textProgress = Math.min(Math.max((scrollY - animStart) / (window.innerHeight * 0.85), 0), 1);
+        desktopTextRef.current.style.transform = `translate3d(0, ${-textProgress * 80}px, 0)`;
+        desktopTextRef.current.style.opacity = String(Math.max(1 - textProgress * 1.15, 0));
+      }
     };
 
     const handleScroll = () => {
@@ -121,8 +132,10 @@ export const Hero = () => {
 
         const onReady = () => {
           loadedFramesRef.current.add(index);
-          const currentScrollDist = scrollDistanceRef.current;
-          const currentProgress = Math.min(Math.max(window.scrollY / currentScrollDist, 0), 1);
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          const animStart = heroTopRef.current;
+          const animRange = animRangeRef.current;
+          const currentProgress = Math.min(Math.max((scrollY - animStart) / animRange, 0), 1);
           const currentTarget = Math.min(Math.floor(currentProgress * (TOTAL_FRAMES - 1)), TOTAL_FRAMES - 1);
           if (currentTarget === index || lastDrawnIndexRef.current === -1) {
             drawFrameByIndex(currentTarget, true);
@@ -168,13 +181,13 @@ export const Hero = () => {
       }
     })();
 
-    measureScrollDistance();
+    updateMeasurements();
     updateCanvasDimensions();
     updateFrameOnScroll();
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', () => {
-      measureScrollDistance();
+      updateMeasurements();
       updateCanvasDimensions();
       updateFrameOnScroll();
     }, { passive: true });
@@ -187,7 +200,7 @@ export const Hero = () => {
   return (
     <div
       ref={containerRef}
-      className="relative w-full bg-[#FCFAF7] md:bg-[#E8DED1] lg:h-[180vh]"
+      className="relative w-full bg-[#FCFAF7] md:bg-[#E8DED1] lg:h-[200vh]"
     >
       <section
         className="relative w-full overflow-hidden bg-[#FCFAF7] md:bg-[#E8DED1] md:min-h-[100dvh] lg:sticky lg:top-0 lg:h-screen lg:min-h-0 flex flex-col justify-between"
@@ -294,7 +307,7 @@ export const Hero = () => {
           3. DESKTOP HERO VIEW
          ========================================================================= */}
       <div className="hidden md:flex relative z-10 max-w-7xl w-full mx-auto px-8 lg:px-12 pt-36 md:pt-44 lg:pt-48 pb-20 flex-1 flex-col justify-center items-end">
-        <div className="w-full max-w-lg lg:max-w-xl text-left ml-auto">
+        <div ref={desktopTextRef} className="w-full max-w-lg lg:max-w-xl text-left ml-auto will-change-transform">
           {/* Main Display Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
