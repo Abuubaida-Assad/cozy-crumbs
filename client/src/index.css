@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-cocoa: #3A2923;
+    --color-cocoa-dark: #24130D;
+    --color-cream: #F8F5EF;
+    --color-offwhite: #FCFAF7;
+    --color-accent: #B36B39;
+    --color-accent-soft: #F4E4D7;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #FDFBF7;
+    color: #3A2923;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-width: 320px;
+  }
+
+  /* Custom smooth scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F8F5EF;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D9C8B5;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #B36B39;
+  }
+
+  /* Utility to hide scrollbars while allowing touch/drag scroll */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@layer components {
+  /* Panel and Card Styles */
+  .bakery-card {
+    @apply bg-[#FCFAF7] rounded-3xl border border-cocoa/5 shadow-soft transition-all duration-300 hover:shadow-hover hover:-translate-y-1;
+  }
+
+  .bakery-panel {
+    @apply bg-white/70 backdrop-blur-md rounded-3xl border border-cocoa/10 shadow-soft-md;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-xs md:text-sm font-semibold tracking-widest uppercase bg-cocoa text-cream-soft hover:bg-accent hover:text-white transition-all duration-300 shadow-soft hover:shadow-soft-lg active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3 text-xs md:text-sm font-semibold tracking-wider uppercase bg-cream-beige/60 text-cocoa hover:bg-cocoa hover:text-cream transition-all duration-300 border border-cocoa/10 active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-xs font-semibold tracking-widest uppercase border border-cocoa/30 text-cocoa hover:bg-cocoa hover:text-cream transition-all duration-300 active:scale-[0.98];
+  }
+
+  /* Badges */
+  .badge-veg {
+    @apply inline-flex items-center justify-center w-4 h-4 border border-green-600 rounded-[3px] p-[2px];
+  }
+  .badge-veg-dot {
+    @apply w-2 h-2 rounded-full bg-green-600;
+  }
+
+  .badge-nonveg {
+    @apply inline-flex items-center justify-center w-4 h-4 border border-red-600 rounded-[3px] p-[2px];
+  }
+  .badge-nonveg-dot {
+    @apply w-2 h-2 rounded-full bg-red-600;
+  }
+
+  .badge-eggless {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200;
+  }
+
+  .badge-featured {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cocoa text-cream shadow-sm;
+  }
+
+  /* Admin Table and Form UI */
+  .admin-input {
+    @apply w-full px-4 py-3 bg-white border border-cocoa/15 rounded-xl text-sm text-cocoa placeholder:text-cocoa/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all;
+  }
+
+  .admin-label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-cocoa/80 mb-1.5;
+  }
+}
+
+/* Animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-bounce-slow {
+  animation: bounceSlow 3.5s ease-in-out infinite;
+}
+

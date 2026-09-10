@@ -1,0 +1,26 @@
+{
+  "name": "cozy-crumbs",
+  "version": "1.0.0",
+  "description": "Cozy Crumbs — Artisanal Bakery Full-Stack Web Application (MERN)",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server",
+    "build:client": "npm run build --prefix client",
+    "start:server": "npm start --prefix server"
+  },
+  "keywords": [
+    "bakery",
+    "mern",
+    "react",
+    "express",
+    "mongodb",
+    "tailwind"
+  ],
+  "author": "Cozy Crumbs",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
