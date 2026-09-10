@@ -110,6 +110,7 @@ export const Hero = () => {
         const textProgress = Math.min(Math.max((scrollY - animStart) / (window.innerHeight * 0.85), 0), 1);
         desktopTextRef.current.style.transform = `translate3d(0, ${-textProgress * 80}px, 0)`;
         desktopTextRef.current.style.opacity = String(Math.max(1 - textProgress * 1.15, 0));
+        desktopTextRef.current.style.pointerEvents = textProgress >= 0.8 ? 'none' : 'auto';
       }
     };
 
