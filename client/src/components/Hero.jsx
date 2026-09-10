@@ -3,14 +3,40 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const TOTAL_FRAMES = 96;
+
 export const Hero = () => {
   const containerRef = useRef(null);
-  const videoRef = useRef(null);
-  const rafIdRef = useRef(null);
+  const canvasRef = useRef(null);
+  const imagesRef = useRef([]);
+  const loadedFramesRef = useRef(new Set());
+  const lastDrawnIndexRef = useRef(-1);
+  const rafScheduledRef = useRef(false);
   const scrollDistanceRef = useRef(1);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (window.innerWidth < 1024) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // 1. Initialize image sequence array
+    const images = new Array(TOTAL_FRAMES);
+    imagesRef.current = images;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas ? canvas.getContext('2d') : null;
+
+    // Measure and resize canvas with capped devicePixelRatio for high-DPI displays
+    const updateCanvasDimensions = () => {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      if (lastDrawnIndexRef.current >= 0) {
+        drawFrameByIndex(lastDrawnIndexRef.current, true);
+      }
+    };
 
     const measureScrollDistance = () => {
       if (containerRef.current) {
@@ -21,64 +47,140 @@ export const Hero = () => {
       }
     };
 
-    const syncVideoToScroll = () => {
-      if (rafIdRef.current) return;
-      rafIdRef.current = requestAnimationFrame(() => {
-        rafIdRef.current = null;
-        if (window.innerWidth < 1024) return;
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // 2. Draw frame to canvas with object-cover and object-[left_center]
+    const drawFrameByIndex = (index, force = false) => {
+      if (!canvas || !ctx) return;
+      if (!force && index === lastDrawnIndexRef.current) return;
 
-        const video = videoRef.current;
-        if (!video || !video.duration || isNaN(video.duration)) return;
-
-        // Container starts at top of page (scrollY = 0)
-        const scrollDist = scrollDistanceRef.current;
-        const progress = Math.min(Math.max(window.scrollY / scrollDist, 0), 1);
-        const maxTime = Math.max(video.duration - 0.01, 0);
-        const targetTime = progress * maxTime;
-
-        if (Math.abs(video.currentTime - targetTime) > 0.01) {
-          if ('fastSeek' in video) {
-            video.fastSeek(targetTime);
-          } else {
-            video.currentTime = targetTime;
+      let img = imagesRef.current[index];
+      // If requested frame is not yet ready, fallback to closest loaded frame
+      if (!img || !img.complete || !loadedFramesRef.current.has(index)) {
+        if (lastDrawnIndexRef.current >= 0 && imagesRef.current[lastDrawnIndexRef.current]?.complete) {
+          img = imagesRef.current[lastDrawnIndexRef.current];
+        } else {
+          let nearest = -1;
+          let minDiff = Infinity;
+          for (const loadedIdx of loadedFramesRef.current) {
+            const diff = Math.abs(loadedIdx - index);
+            if (diff < minDiff) {
+              minDiff = diff;
+              nearest = loadedIdx;
+            }
+          }
+          if (nearest >= 0) {
+            img = imagesRef.current[nearest];
           }
         }
+      }
+
+      if (!img || !img.complete) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      if (w === 0 || h === 0) return;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const imgW = img.naturalWidth || 1280;
+      const imgH = img.naturalHeight || 720;
+      const scale = Math.max(w / imgW, h / imgH);
+      const renderW = imgW * scale;
+      const renderH = imgH * scale;
+
+      const renderX = 0; // Left aligned
+      const renderY = (h - renderH) / 2; // Center aligned vertically
+
+      ctx.drawImage(img, renderX, renderY, renderW, renderH);
+      lastDrawnIndexRef.current = index;
+    };
+
+    // 3. Scroll handler: calculate target frame and draw on requestAnimationFrame
+    const updateFrameOnScroll = () => {
+      const scrollDist = scrollDistanceRef.current;
+      const progress = Math.min(Math.max(window.scrollY / scrollDist, 0), 1);
+      const targetIndex = Math.min(Math.floor(progress * (TOTAL_FRAMES - 1)), TOTAL_FRAMES - 1);
+      drawFrameByIndex(targetIndex);
+    };
+
+    const handleScroll = () => {
+      if (!rafScheduledRef.current) {
+        rafScheduledRef.current = true;
+        requestAnimationFrame(() => {
+          rafScheduledRef.current = false;
+          updateFrameOnScroll();
+        });
+      }
+    };
+
+    // 4. Intelligent progressive frame preloader with HTMLImageElement.decode()
+    const loadFrame = (index) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const num = String(index + 1).padStart(4, '0');
+        img.src = `/cake-sequence/frame-${num}.webp`;
+
+        const onReady = () => {
+          loadedFramesRef.current.add(index);
+          const currentScrollDist = scrollDistanceRef.current;
+          const currentProgress = Math.min(Math.max(window.scrollY / currentScrollDist, 0), 1);
+          const currentTarget = Math.min(Math.floor(currentProgress * (TOTAL_FRAMES - 1)), TOTAL_FRAMES - 1);
+          if (currentTarget === index || lastDrawnIndexRef.current === -1) {
+            drawFrameByIndex(currentTarget, true);
+          }
+          resolve();
+        };
+
+        if ('decode' in img) {
+          img.decode().then(onReady).catch(() => {
+            img.onload = onReady;
+            img.onerror = () => resolve();
+          });
+        } else {
+          img.onload = onReady;
+          img.onerror = () => resolve();
+        }
+
+        images[index] = img;
       });
     };
 
-    const video = videoRef.current;
-    if (video) {
-      video.pause();
-      video.currentTime = 0;
+    // Preload Priority:
+    // 1. Frame 0 immediately
+    // 2. Next 24 frames immediately
+    // 3. Remaining frames progressively in batches
+    (async () => {
+      await loadFrame(0);
+      updateCanvasDimensions();
+      updateFrameOnScroll();
 
-      const onMetadataLoaded = () => {
-        video.pause();
-        measureScrollDistance();
-        syncVideoToScroll();
-      };
-
-      if (video.readyState >= 1) {
-        onMetadataLoaded();
-      } else {
-        video.addEventListener('loadedmetadata', onMetadataLoaded, { once: true });
+      const initialBatch = [];
+      for (let i = 1; i < Math.min(25, TOTAL_FRAMES); i++) {
+        initialBatch.push(loadFrame(i));
       }
-    }
+      await Promise.all(initialBatch);
+
+      for (let i = 25; i < TOTAL_FRAMES; i += 15) {
+        const batch = [];
+        for (let j = i; j < Math.min(i + 15, TOTAL_FRAMES); j++) {
+          batch.push(loadFrame(j));
+        }
+        await Promise.all(batch);
+      }
+    })();
 
     measureScrollDistance();
-    syncVideoToScroll();
+    updateCanvasDimensions();
+    updateFrameOnScroll();
 
-    window.addEventListener('scroll', syncVideoToScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', () => {
       measureScrollDistance();
-      syncVideoToScroll();
+      updateCanvasDimensions();
+      updateFrameOnScroll();
     }, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', syncVideoToScroll);
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
@@ -103,16 +205,11 @@ export const Hero = () => {
             }}
           />
 
-          {/* Cinematic Cake Animation: Laptop/Desktop Only (>= 1024px), Scroll-Scrubbed Video */}
+          {/* Cinematic Cake Animation: Laptop/Desktop Only (>= 1024px), Zero-Lag WebP Canvas */}
           <div className="hidden lg:block motion-reduce:hidden absolute inset-0 pointer-events-none">
-            <video
-              ref={videoRef}
-              src="/videos/cozy-crumbs-cake.mp4"
-              muted
-              playsInline
-              preload="auto"
-              poster="/hero-bg.jpg"
-              className="w-full h-full object-cover object-[left_center]"
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full block"
               aria-label="Cozy Crumbs Artisanal Cake Animation"
             />
           </div>
